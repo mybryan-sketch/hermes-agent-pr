@@ -157,6 +157,17 @@ class TestProxyEnvironmentDnsDelegation:
         with _resolves_to("198.18.0.23"):
             assert is_safe_url(url) is expected
 
+    @pytest.mark.parametrize("url, expected", [
+        ("https://ww-aibot-img-1258476243.cos.ap-guangzhou.myqcloud.com/image", True),
+        ("https://ww-aibot-img-other.cos.ap-guangzhou.myqcloud.com/image", True),
+        ("https://evil.cos.ap-guangzhou.myqcloud.com/image", False),
+        ("https://ww-aibot-img-1.cos.us-east-1.myqcloud.com/image", False),
+        ("http://ww-aibot-img-1258476243.cos.ap-guangzhou.myqcloud.com/image", False),
+    ])
+    def test_wecom_ai_bot_image_hostname_exception(self, url, expected):
+        with _resolves_to("198.18.0.23"):
+            assert is_safe_url(url) is expected
+
 
 class TestAsyncIsSafeUrl:
     """async_is_safe_url must match is_safe_url (runs DNS in a thread pool)."""

@@ -201,6 +201,14 @@ _TRUSTED_PRIVATE_IP_HOSTS = frozenset({
     "multimedia.nt.qq.com.cn",
 })
 
+# WeCom AI Bot image URLs are served from hosts such as
+# ``ww-aibot-img-<corp-id>.cos.ap-guangzhou.myqcloud.com``.  In this
+# environment the proxy resolves these public media hosts into the benchmark
+# range (198.18.0.0/15), just like QQ media above.  Keep the exception narrow:
+# only the documented WeCom image-host shape is trusted, never the whole
+# ``myqcloud.com`` or ``cos.ap-guangzhou.myqcloud.com`` namespace.
+_WECOM_IMAGE_HOST_SUFFIX = ".cos.ap-guangzhou.myqcloud.com"
+
 _MAX_SSRF_CONNECT_IPS = 8
 
 # 100.64.0.0/10 (CGNAT / Shared Address Space, RFC 6598) is NOT covered by
@@ -409,7 +417,15 @@ def is_always_blocked_url(url: str) -> bool:
 
 def _allows_private_ip_resolution(hostname: str, scheme: str) -> bool:
     """Return True when a trusted HTTPS hostname may bypass IP-class blocking."""
-    return scheme == "https" and hostname in _TRUSTED_PRIVATE_IP_HOSTS
+    if scheme != "https":
+        return False
+    if hostname in _TRUSTED_PRIVATE_IP_HOSTS:
+        return True
+    return (
+        hostname.startswith("ww-aibot-img-")
+        and hostname.endswith(_WECOM_IMAGE_HOST_SUFFIX)
+        and hostname.count(".") == _WECOM_IMAGE_HOST_SUFFIX.count(".")
+    )
 
 
 def is_safe_url(url: str) -> bool:
